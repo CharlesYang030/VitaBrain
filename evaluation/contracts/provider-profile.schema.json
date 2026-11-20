@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://egophys.local/contracts/provider-profile.schema.json",
+  "title": "Provider Profile Without Secret Value",
+  "type": "object",
+  "required": ["protocol", "model"],
+  "properties": {
+    "protocol": {"enum": ["mock", "openai_chat", "anthropic_native"]},
+    "base_url": {"type": "string"},
+    "model": {"type": "string"},
+    "secret_env": {"type": "string"},
+    "supports_vision": {"type": "boolean"},
+    "supports_json": {"type": "boolean"},
+    "context_window": {"type": "integer", "minimum": 1},
+    "timeout_seconds": {"type": "number", "minimum": 1},
+    "max_retries": {"type": "integer", "minimum": 0},
+    "omit_parameters": {"type": "array", "items": {"type": "string"}},
+    "parameters": {"type": "object"}
+  },
+  "additionalProperties": false
+}
+

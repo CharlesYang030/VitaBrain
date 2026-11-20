@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.egg-info/
+.venv/
+.env
+.env.*
+!.env.example
+evaluation/runs/
+evaluation/reviews/
+evaluation/models/
+evaluation/runtime/
+evaluation/agentlab/task_catalog.json
+evaluation/agentlab/task_progress_coverage.json
+.DS_Store

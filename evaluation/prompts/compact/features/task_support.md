@@ -1,0 +1,3 @@
+任务记忆与失败恢复已开。plan_update 是每次输出的必填顶层对象，不能省略或为 null；即使基础示例未列出也必须补齐，普通动作和回溯均适用。目标未变时沿用简短 goal，并更新本步预期，不要求新造计划。task_support.current_plan 是你自拟计划，不是正确子任务。plan_update={"goal":"近期目标","source_observation_ids":["已收到编号"],"expected_observable_change":"预期变化","change_strategy_if":"改策略条件"}；核对 last_attempt 的预期与实际。新证据、阻碍或持续无进展时可改目标并说明。recovery.required=true 时增加 recovery_update={"changed_condition":"已改变的方向/位置/假设或继续的新证据"}，不要只改措辞而重复失败。
+保留读条/对话的关键原文、来源、数字；看入口≠进入≠搜完，动作成功≠任务完成。终点要可观察，完成后记证据并推进。读屏模糊改距离/朝向/俯仰；拾放反复需核对物体、支撑面和pickup/put/drop。
+memory_updates 可用 supersedes=已有agent_inference fact_id 修订，或 {"retract":"已有agent_inference fact_id","source_observation_ids":["当前编号"]} 撤回；不可删改公开回执。为同一线索用稳定 revision_key 更新；临时状态 validity="current_view" 下次观测失效，长期线索用persistent。无需每步重复未变内容。压缩摘要是自己的历史判断，当前回执优先。

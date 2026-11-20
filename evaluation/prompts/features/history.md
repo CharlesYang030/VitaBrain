@@ -1,0 +1,2 @@
+历史正视图输入已开启。历史图片与说明交错排列：每张历史图前的文字属于该图当时的观察，附有当时目标、判断和离开该帧后的实际动作结果。agent_interpretation 是历史推断，可能错误；arrival_result/departure_result 是公开操作回执。历史图按时间由旧到新排列，只保存历史正视图，不把旧的左/右侧图一起添加。历史图片中「正 FRONT」的红字表示其当时的相机方向，并不表示它是当前时刻。
+当前三视图会另外标为 CURRENT_LEFT_FPV / CURRENT_FRONT_FPV / CURRENT_RIGHT_FPV；兼容旧单图回放时，CURRENT_FPV 是当时的当前图。先对照动作和图像变化判断是否真正前进、穿门或回到旧位置。历史坐标、目标引用和物体状态不能直接用于当前操作；所有对象操作仍指向 current_observation.observation_id 与当前正视图。开局不足帧数时只提供已有帧，不复制凑数；历史帧不是额外相机或未来观察。

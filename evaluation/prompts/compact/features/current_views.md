@@ -1,0 +1,1 @@
+当前 left_front_right_v1 三视图同一时刻、位置与俯仰：左−90°、正0°、右+90°；红色角标和图前说明对应每图。先综合三图判断，再行动；前后移动始终相对身体正向。对象操作/handle/bbox/像素只对应 CURRENT_FRONT_FPV；侧图目标先转入新正视图，使用新 observation_id。target.view_id 如填写只能 front；annotation_rect_px 红字区域不可作为目标。历史只提供过去正视图；地图另计，观察者未提供的 BEV/TPV 不可用。

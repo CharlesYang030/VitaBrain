@@ -1,0 +1,17 @@
+providers:
+  mock:
+    protocol: mock
+    model: deterministic-mock-v1
+    supports_vision: true
+    supports_json: true
+    timeout_seconds: 10
+
+  openai_compatible:
+    protocol: openai_chat
+    base_url: https://api.example.com/v1
+    model: your-vision-model
+    secret_env: VLM_API_KEY
+    supports_vision: true
+    supports_json: false
+    timeout_seconds: 120
+    max_retries: 3

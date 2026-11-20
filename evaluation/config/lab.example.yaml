@@ -1,0 +1,14 @@
+web:
+  host: 127.0.0.1
+  port: 8852
+
+environment:
+  backend: mock
+  scenegen_url: http://127.0.0.1:8860
+
+evaluation:
+  focused_subtask_timeout_seconds: 300
+  default_run_mode: strict
+  default_interface_mode: e2e_visual_grounding
+  context_character_budget: 40000
+

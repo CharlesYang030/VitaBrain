@@ -1,0 +1,23 @@
+{
+  "version": "front_navigation_baseline_v2",
+  "create_run": {
+    "environment_backend": "development_inspector",
+    "scenario_id": "STB_165",
+    "provider": "gptge_astra",
+    "interface_mode": "affordance_assisted",
+    "run_mode": "adaptive_probe",
+    "seed": 7,
+    "agent_mode": "arm",
+    "reasoning_effort": "",
+    "apc_auto": false,
+    "focused_timeout_seconds": 300,
+    "spatial_memory_enabled": false,
+    "fog_gt_enabled": true,
+    "visual_frame_count": 1,
+    "context_policy": "enhanced_v1",
+    "navigation_enabled": true,
+    "house_index": null
+  },
+  "auto_step_limit": 200,
+  "step_counting_protocol": "model_decision_v2"
+}

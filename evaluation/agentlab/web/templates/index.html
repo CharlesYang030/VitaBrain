@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Embodied Agent Lab · 8852</title>
+  <link rel="stylesheet" href="/static/style.css?v=public-task-20260924">
+</head>
+<body>
+  <header>
+    <div><span class="eyebrow">EgoPhys-Bench / Agent Workspace</span><h1>具身空间长程任务智能体</h1></div>
+    <div id="watermark" class="watermark muted">未运行</div>
+    <button id="modelViewBtn" class="mode-toggle" title="只显示模型真正能看到/输出的内容，用于亲自审计泄漏">👁 模型视角</button>
+    <div class="status"><span id="healthDot" class="dot"></span><span id="healthText">连接中</span><b>8852</b></div>
+  </header>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <div id="drawer" class="drawer hidden">
+    <div class="drawer-head">
+      <b id="drawerTitle">详情</b>
+      <div class="drawer-actions">
+        <button id="drawerCopy" class="mini">复制</button>
+        <button id="drawerClose" class="mini">关闭 ✕</button>
+      </div>
+    </div>
+    <div id="drawerBody" class="drawer-body"></div>
+  </div>
+
+  <main>
+    <details class="panel guide">
+      <summary><span class="eyebrow">00 / How To</span> <b>使用指南：什么时候点什么</b>（点击展开）</summary>
+      <div class="guide-grid">
+        <div><b>开始一轮</b><ol>
+          <li>真实 Unity 选「8851 Inspector 开发桥」；mock 只演示契约。选剧本、Provider、Seed 与化身（本项目通常 arm）。</li>
+          <li>Provider 测试会实际调用接口；只有需要检查连通性时点击。推理力度留空表示 Provider 默认，APC 超时不是 API 请求超时。</li>
+          <li>确认本页所有开关，再「创建运行」并等待场景就绪。先用「单步」核对输入，随后「自动运行」。步数上限是本轮累计模型决策上限，当前最多 400（导航内部动作另计）；暂停后继续只执行剩余步数。</li>
+          <li>配置只对新建运行生效。历史回合沿用原始图片和协议；归档回合不能续跑，须新建。</li>
+        </ol></div>
+        <div id="safetyGuide"><b>实时安全状态</b><ul>
+          <li>智能体视野顶部显示当前运行的生命值条、已记录扣血量、扣血次数、警告与碰撞回执次数；展开记录可查看决策步、北京时间、原因、前后生命值及避免重复掉血的提示。</li>
+          <li>安全面板始终对应本轮最新状态，图片回放不会将血条倒退到过去。免扣期优先取原生观察；旧服务按已完成动作回执推算并注明，执行中的动作以最新回执为准。</li>
+          <li>decision_safety_v2：一般风险每次扣2HP，禁止区域扣5HP；扣血后两次主决策免扣。首次主躯干碰撞只警告，连续碰撞扣血；手部操作不扣血。旧运行沿用各自的安全规则。<a href="/static/previews/navigation-view-safety-20260917.html" target="_blank" rel="noopener">去遮挡选点与安全面板验收报告</a>。</li>
+        </ul></div>
+        <div><b>基础视觉：左、正、右</b><ul>
+          <li>新版真实环境固定提供当前三视图：左 −90°、正 0°、右 +90°，相同观察位置、俯仰与视场角。每图左上角有红字，图前有对应文字说明。</li>
+          <li>相机采样不转动机器人，不增加智能体动作步数，并核对采样前后物理状态。无法完整取得三图时暂停，不复制正图冒充侧图。</li>
+          <li>原生躯干已恢复：第三人称/俯视图保留完整躯干，第一人称仅通过相机渲染裁掉自身躯干；机械臂、NPC、手持物和环境遮挡保留。三图使用 0.1m 近裁剪面，并校验相机位置、相对躯干方向和正视图恢复；不以放大裁剪面隐藏身体。</li>
+          <li>对象的 handle / 像素仍指当前正视图；要操作侧图里的物体，先转向、取得新正视图。红字标签区域不可作为像素目标。</li>
+          <li>前进/后退相对身体朝向，最长 5m；长路可走大步，门口、目标附近和需谨慎搬运时宜小步。遇阻即停，失败也可能已移动，应看实际位移。</li>
+        </ul></div>
+        <div><b>历史多图开关</b><ul>
+          <li><b>关</b>：仍有当前左正右 3 图。</li>
+          <li><b>5 时刻</b>：历史正视图最多 4 张＋当前三图＝最多 7 张第一视角图。</li>
+          <li><b>10 时刻</b>：历史正视图最多 9 张＋当前三图＝最多 12 张第一视角图。</li>
+          <li>历史只取正视图，按旧到新排列，与当时目标、判断、动作回执交错。开局不足帧数只展示已有帧，不复制凑数；BEV 图片另计。</li>
+        </ul></div>
+        <div><b>可见通道点选导航 · GT 辅助</b><ul>
+          <li>独立开关，默认开。需要8851原生后端，可与探索地图、深度、历史图和已探索路径回溯同时开启；与旧版RGB点选导航互斥。通常通行、接近目标优先点选；前后移动主要用于交互前精调、避让或无可选区域时脱困。</li>
+          <li>模型先在主响应决定导航目的，再打开独立选点响应：输入当前左、正、右三张绿色通道图（图文交错）和目的。模型先指定 view_id=left/front/right，再在该图绿色内部选点，黄色向下箭头展示实际选择；网页同时展示第二次模型输入、输出和私有BEV路径。</li>
+          <li>像素用配对深度与相机矩阵转为世界坐标，后端A*只规划同楼层当前可见通道（最远8m，三视图已见区域并集），核对身体净空，不选择墙壁、家具或楼梯。内部先转正身体朝向、再向前走，不侧滑；遇阻即停，不传送、不自动开门/换层。平视时脚前短盲区由后台核验净空连接，最多1.8m，不额外揭雾；仍无绿色区域时再调整俯仰/朝向。</li>
+          <li>一轮导航计1决策步，但通常有2次模型调用（第二次同时输入3张图），tokens/耗时分别计入。内部最多64个动作，逐项审计。选点API失败时保留待选点请求，重试不重复主决策；动作回执不明则暂停核对，禁止盲目重放。</li>
+          <li>选点专用左正右图临时隐藏自身机械臂和当前手持物的渲染，RGB与深度同步重采样；墙、门和家具继续遮挡，持物与世界状态不变。普通观察、历史图和揭雾仍沿用原始视图。需要新版原生渲染扩展；未升级时明确报错，不伪造地面。这是显式GT导航辅助，与无辅助导航成绩分开比较；到达不等于完成子任务。关闭时不发送标注图或选点提示，不改变原有导航/回溯协议。</li>
+        </ul></div>
+        <div><b>正视深度图开关 · RGB-D</b><ul>
+          <li>默认关；开启后在当前左正右三图之后增加一张当前正视深度图，历史仍只提供正视 RGB。可独立配合地图、历史图、回溯和两种接口；需要 8851 原生传感器。</li>
+          <li>来自同一次原子观察的正视相机，视口像素一一对应，下方追加图例。固定 0–6 米：近红、远紫；6+ 表示至少6米，灰色无有效测量或标签遮挡；不随画面重新归一化。保留真实遮挡。</li>
+          <li>提示模型结合 RGB 与深度，在决策前从 5/4/3/2 米中选留有余量的最长可见直线距离；深度不证明身体可通过，也不是先撞5米再撞4米。近目标、窄路或不确定时仍用小步。</li>
+          <li>开关同步切换深度提示词。配置/历史/I/O 标注 RGB-D；「本步模型图片」展示实际发送的深度原图与说明。缺图或与正视图不同帧则暂停，不悄悄退回 RGB。</li>
+          <li><a href="/static/previews/metric-depth-20260916.html" target="_blank" rel="noopener">深度图实景验收与文本增长分析（可分享HTML）</a>。</li>
+          <li>额外1张图片计入完整输入 token 预算；开启深度后，默认触发/目标/超额提示阈值各加2k。当前三视图＋单层地图对应16k/11k/18k，关闭深度恢复14k/9k/16k。历史窗口与多层地图在其原预算上另加这一次2k；显式自定义预算优先。该功能尚不代表导航性能已提升。</li>
+        </ul></div>
+        <div><b>两种地图开关（互斥）</b><ul><li>模型BEV保留红色实际来路，只有站位编号做稀疏化；导航中间路段画线但不新增P点，回溯不画穿墙直连线。点选导航内部动作不逐一新增P点，结束时记录实际落点/受阻停点；约0.85m内且没有已知墙或未知间隙的近邻站位合并，保留ID、更新真实位置及朝向。普通路线约每2.5m才补站位；返回已探索位置优先考虑回溯。后台完整轨迹仍用于可回溯性检测和审计。</li>
+          <li><b>探索式 GT 地图</b>：明确的特权俯视辅助。当前左正右各自按深度遮挡检查，再取可见表面并集，水平最远 4m；不是整片 270° 揭雾。</li>
+          <li>黑色未知，原色当前可见，暗色上次所见；未看到的状态不会偷偷更新。固定画布、红色方位/朝向/路线；N 节点关联公开记忆。只提供已访问楼层，各层同时展示。</li>
+          <li><b>RGB 主动建图</b>：原有估计地图，不使用完整 GT；目前使用正视图及公开动作结果，要求机械臂标定。可能有感知误差。</li>
+          <li>两种地图都关闭时，不向模型提供 BEV。研究者的完整 Inspector BEV 仍可查看，但不会成为模型输入。</li>
+        </ul></div>
+        <div><b>记忆、导航和接口</b><ul>
+          <li><b>模型自身记忆压缩</b>：默认开。每次决策前估算完整输入（含图片），达到阈值时调用同一个待测模型，用固定规则把「上次摘要＋新增公开记忆」压成新摘要，再继续决策。当前动作空间、观测、三视图和地图保持；地图节点历史一并压缩。原始审计仍保留。压缩调用单列费用/延迟，不计动作步数。</li>
+          <li>未开启深度时，当前三视图＋地图：触发 14k、目标 9k、超额提示阈值 16k；无地图：12k/7k/15k。5 时刻带地图：18k/11k/22k；10 时刻带地图：24k/14k/30k；无地图分别16k/9k/20k、22k/12k/27k。每增加一个已访问地图楼层各加2k；开启正视深度再各加2k（每轮仅加一次）。都是估算完整输入 tokens，随后用 API usage 校准；图片和当前信息本身过大时无法保证压到目标。压缩调用至少间隔4步或输入增长2k，超额也不绕过此间隔反复压缩。超过提示阈值标记 over_budget，不因此直接停止运行。</li>
+          <li>压缩失败时，模型下一次决策仍收到原摘要和全部待压缩增量；格式/来源错误等20秒再试一次。有效摘要略超长度目标也接受并标记；超额不再省略新增线索，页面/审计标记 over_budget。这不保证输入永不超额；API错误仍按原重试规则处理。摘要是模型判断，可能遗漏或误概括，并非环境认证。开关只对新建运行生效，运行区显示预算和摘要，I/O审计保留完整压缩输入/输出。</li>
+          <li><a href="/static/previews/retest-ready-20260916.html" target="_blank" rel="noopener">昨晚至今修复汇总、压缩验收与重测步骤</a>。</li>
+          <li><b>安全计分（按主决策）</b>：普通风险扣2点，警戒危险区扣5点；扣血后接下来两次操作免扣，第三次仍违规再扣。手部操作和内部收臂不扣血。主躯干首次碰撞仅返回警告，连续碰撞扣2点；导航内部小步不重复计数。任务禁止条件仍照常记录。</li>
+          <li><b>非记忆文本精简</b>：随模型自身记忆压缩开关启用。框架将重复地图/安全事件字段编码为带 columns、defaults、rows 的表；只有算上解码说明后确实省 tokens 才采用，保留全部节点、坐标、来源和事件。当前动作对象、生命值、持物状态及最新失败回执保持准确；旧回溯理由和过期计划送入待测模型的同一次历史摘要，不另接模型。I/O显示框架节省量与输入分项统计。原始审计和地图图片不变。</li>
+          <li><b>任务记忆与失败恢复</b>：原有上下文 / 增强。增强加入持续目标、预期与回执核对；约6–8次决策无新证据或搜索进展时，提示重新规划并探索已见但未查的入口，只有确实发现可用楼梯/电梯才考虑换层。模型自行按区域记录特征、已走连接、线索、存物处和未查事项，压缩时保留区别与来源；不读取隐藏房间或答案，也不把揭雾当作搜完。支持修订线索和临时记忆过期。</li>
+          <li><b>已探索路径回溯</b>：新的移动辅助默认项，需要探索式 GT 地图。模型从地图青色 P 编号中选择实际到过的站位，同时说明回去的原因与近期目标。先检查整段已走路线的当前门、障碍和身体净空；只支持同层；允许持物，保留当前物品与内容，恢复历史位置、朝向和视线，不搜索未知捷径。检查失败保持原位置与画面；成功进行一次辅助落位并刷新三视图/BEV，原因、历史事件、目标和前后观察写入记忆。一次请求计1个决策，另列回溯次数与距离；不会代为开门或完成任务，也不模拟途中时间与风险。普通操作与回溯只能二选一。旧版正视图点选导航仍可选，但两种辅助互斥。普通5m直线移动不依赖辅助。</li>
+          <li><b>Affordance-Assisted</b>：给当前正视图的匿名可交互条目；<b>E2E</b>：模型自己识物，用正视图像素选目标。</li>
+          <li>read 主动读取可读文字；屏幕图案由模型看图。drop 是松手释放；put 才指向承接桌面或容器。均应核对实际反馈。</li>
+        </ul></div>
+        <div><b>协议、运行按钮和透明审计</b><ul>
+          <li><b>Strict</b> 不进行 APC 交接；<b>Adaptive Probe</b> 用于能力诊断。APC 自动交接开时，超过所设时限会尝试帮助并记账；关时只计时，人工交接仍单独记录。</li>
+          <li><b>单步</b> 一步后停；<b>自动运行</b> 连续执行；<b>停止</b> 请求暂停自动循环，已发出的动作须等待回执；<b>终止</b> 结束本轮。失败或超时先核对最后回执，不盲目重放。</li>
+          <li><b>现场检查点</b>：新版服务在初始观察和每个完整决策后自动保存；暂停后也可点「保存检查点」。保存记忆、压缩状态、探索地图、历史图文、配置及步数。重启 8852 后点「恢复检查点」，核验 8851/Unity 仍存活且现场一致，恢复后保持暂停，再点单步或自动运行。不要新建同场景替代恢复。此版本不支持 Unity 已退出、重建场景或电脑重启后的物理现场恢复；动作回执不明时先核对，禁止重放。旧版运行不能仅凭轨迹补造完整检查点。</li>
+          <li><b>API 自动重试</b>：模型请求遇到 HTTP 400、408、429、5xx 或连接/超时错误，等待 20 秒，最多追加 3 次重试（总共最多 4 次请求）；仍失败才暂停。沿用同一输入，不重复环境动作。页面显示次数与倒计时，停止按钮可取消等待；401/403 等鉴权错误直接暂停。JSON 输出格式重试仍是独立规则。</li>
+          <li>「本步模型图片」逐张展示上下文原图和相邻说明，包括历史图、当前三图、实际提供的地图；尚未构建模型输入时明确标为预览。</li>
+          <li>完整 Inspector 各层 BEV / TPV 标为「仅观察者」。右上角「模型视角」隐藏这些私有图，保留模型已获授权的探索地图。</li>
+          <li>回放可查历史步；I/O 查看完整提示词与回复；泄漏自检查公开事件；导出保存审计。运行历史显示 ID、北京时间、耗时、结果和配置。工程验收不是模型通关成绩。</li>
+          <li>已完成、已终止或加载失败的运行，在最后一批历史记录加载完后停止自动刷新。重新打开网页或评测服务后，选择“运行历史”里的记录，再拖动回放滑条；画面按需加载，模型决策说明、输入输出和动作回执仍可查看。历史回放不调用模型、不恢复或操作 Unity；原始审计和图像保留在 runs/ 中。血条等最新状态面板仍显示该运行最终状态。</li>
+          <li><a href="/static/previews/current-views-v1-20260914.html" target="_blank" rel="noopener">三视图与分层揭雾实景验收报告</a>（图片内嵌，保存 HTML 后可直接分享）。</li>
+        </ul></div>
+      </div>
+    </details>
+
+    <section class="setup panel">
+      <div class="section-title">
+        <div><span class="eyebrow">01 / Experiment Contract</span><h2>运行配置</h2></div>
+        <span class="pill">API 密钥只存在于服务端环境变量，不进入浏览器</span>
+      </div>
+      <div class="form-grid">
+        <label>环境 Backend<select id="backend"></select></label>
+        <label>场景<select id="scenario"></select></label>
+        <label>Provider<select id="provider"></select></label>
+        <label>接口难度<select id="interfaceMode">
+          <option value="affordance_assisted">Affordance-Assisted</option>
+          <option value="e2e_visual_grounding">E2E Visual Grounding</option>
+        </select></label>
+        <label>运行协议<select id="runMode">
+          <option value="strict">Strict（正式口径）</option>
+          <option value="adaptive_probe">Adaptive Probe（能力诊断）</option>
+        </select></label>
+        <label>Seed<input id="seed" type="number" value="7"></label>
+        <label>房间ID（留空=沿用已绑定）<input id="houseIndex" type="number" placeholder="如 1072" min="0"></label>
+        <label>化身（机械臂）<select id="agentMode">
+          <option value="">剧本默认</option>
+          <option value="arm">arm · ManipulaTHOR 机械臂</option>
+          <option value="default">default · 无臂小型机器人</option>
+          <option value="stretch">stretch · Stretch 机器人</option>
+        </select></label>
+        <label>推理力度（reasoning effort）<select id="reasoningEffort">
+          <option value="">Provider 默认</option>
+          <option value="minimal">minimal</option>
+          <option value="low">low</option>
+          <option value="medium">medium</option>
+          <option value="high">high</option>
+        </select></label>
+        <label>APC 超时（秒）<input id="timeout" type="number" value="300" min="1"></label>
+        <label>APC 自动交接<select id="apcAuto">
+          <option value="on">开（超时自动交接）</option>
+          <option value="off" selected>关（只计时，交接靠人工）</option>
+        </select></label>
+        <label>自动运行步数上限<input id="autoSteps" type="number" value="400" min="1" max="400"></label>
+        <label>RGB 主动建图（原功能）<select id="spatialMemory">
+          <option value="off" selected>关（保持原有输入）</option>
+          <option value="on">开（RGB 估计通道地图，非 GT）</option>
+        </select></label>
+        <label>探索式 GT 地图<select id="fogGtMap">
+          <option value="off">关（不提供真实地图）</option>
+          <option value="on" selected>开（三视图可见并集 · 最远4m · 分楼层）</option>
+        </select></label>
+        <label>历史正视图窗口（当前始终3图）<select id="visualFrames">
+          <option value="1" selected>关（当前左正右 3 图）</option>
+          <option value="5">5 时刻（历史正4＋当前3＝最多7图）</option>
+          <option value="10">10 时刻（历史正9＋当前3＝最多12图）</option>
+        </select></label>
+        <label>正视深度图（RGB-D 辅助）<select id="depthImage">
+          <option value="off" selected>关（保持 RGB 输入）</option>
+          <option value="on">开（当前正视深度＋固定米制图例）</option>
+        </select></label>
+        <label>模型自身记忆压缩<select id="memoryCompaction">
+          <option value="on" selected>开（待测模型按预算增量压缩）</option>
+          <option value="off">关（旧版文本窗口）</option>
+        </select></label>
+        <label>任务记忆与失败恢复<select id="contextPolicy">
+          <option value="legacy">原有上下文</option>
+          <option value="enhanced_v1" selected>增强：持续目标与结果核对</option>
+        </select></label>
+        <label>可见通道点选导航（GT 辅助）<select id="gtNavigation">
+          <option value="off">关（保留现有移动功能）</option>
+          <option value="on" selected>开（两阶段选点＋A*物理行走）</option>
+        </select></label>
+        <label>移动辅助<select id="navigationAssist">
+          <option value="off">关（模型逐步控制）</option>
+          <option value="recall" selected>已探索路径回溯（检查后返回P站位）</option>
+          <option value="on">旧版：正视图点选局部导航</option>
+        </select></label>
+      </div>
+      <div id="backendMeta" class="meta-line"></div>
+      <div id="scenarioMeta" class="meta-line"></div>
+      <div id="providerMeta" class="meta-line"></div>
+      <div class="actions">
+        <button id="createBtn" class="primary">创建运行</button>
+        <button id="testBtn">测试 Provider</button>
+        <span id="actionMessage"></span>
+      </div>
+    </section>
+
+    <section class="workspace">
+      <div class="left-stack">
+        <article id="replayControlsPanel" class="panel replay-controls-panel" aria-label="回放与运行控制">
+          <div class="replay-bar">
+            <span class="eyebrow">回放</span>
+            <input id="replaySlider" type="range" min="0" max="0" value="0" disabled>
+            <span id="replayLabel" class="replay-label">—</span>
+            <button id="liveBtn" class="mini live active">跟随最新</button>
+          </div>
+          <p id="replayLoadState" class="view-contract-note">运行结束后停止自动刷新；再次选择历史运行可加载已保存画面、决策说明与操作回执。</p>
+          <div class="actions">
+            <button id="stepBtn" class="primary" disabled title="执行一步就停，适合逐步细看">单步</button>
+            <button id="autoBtn" disabled title="连续运行至步数上限，可随时停止">自动运行</button>
+            <button id="stopBtn" disabled title="暂停自动循环（不结束本局）">停止</button>
+            <button id="checkpointBtn" disabled title="停止后保存完整评测端状态，保留 Unity 现场">保存检查点</button>
+            <button id="restoreCheckpointBtn" title="评测服务重启后，核验仍存活的 Unity 现场再恢复；不会自动执行">恢复检查点</button>
+            <span id="checkpointStatus" class="sub"></span>
+            <button id="terminateBtn" class="danger" disabled title="彻底结束本局">终止运行</button>
+            <button id="handoffBtn" class="danger" disabled title="Adaptive Probe 专用：立即给模型最小提示（成绩作废）">调试：立即交接</button>
+            <span class="spacer"></span>
+            <button id="leakScanBtn" class="mini" disabled title="服务端扫描全部模型可见事件">🔍 泄漏自检</button>
+            <a id="exportBtn" class="mini btn-link disabled" href="#" download>📦 导出</a>
+          </div>
+          <div id="autoError" class="auto-error hidden" role="alert"></div>
+          <div id="leakResult" class="leak-result hidden"></div>
+        </article>
+
+        <article class="panel viewport-panel">
+          <div class="section-title">
+            <div><span class="eyebrow">02 / Agent View</span><h2>智能体视野</h2></div>
+            <span id="modeBadge" class="pill muted">尚未运行</span>
+          </div>
+          <div id="behaviorWarnings" class="behavior-warning hidden" role="status"></div>
+          <p class="view-contract-note">当前左 −90° · 正 0° · 右 +90°；对象操作绑定正视图。旧记录按原始输入展示。</p>
+          <div class="multiview">
+            <div class="viewport camera-side-view" id="leftViewCell"><img id="fpvLeft" alt="当前左视图" draggable="false"><div class="side-empty" id="leftViewEmpty">暂无左视图</div></div>
+            <div id="viewport" class="viewport main-view">
+              <span class="view-label"><span class="vtag model">正视图 · 模型所见</span></span>
+              <img id="fpv" alt="" draggable="false">
+              <div id="bboxLayer" class="bbox-layer"></div>
+              <div id="viewportOverlay" class="viewport-overlay">
+                <div class="spinner"></div>
+                <div id="overlayText">等待环境画面</div>
+                <pre id="bootLog" class="boot-log"></pre>
+              </div>
+              <div id="modelWaiting" class="model-waiting hidden"><div class="spinner small"></div>模型思考中…</div>
+              <div id="replayBadge" class="replay-badge hidden">⏪ 回放模式 — 步 <span id="replayStepNo">0</span></div>
+            </div>
+            <div class="viewport camera-side-view" id="rightViewCell"><img id="fpvRight" alt="当前右视图" draggable="false"><div class="side-empty" id="rightViewEmpty">暂无右视图</div></div>
+          </div>
+          <section id="modelImagesPanel" class="visual-section">
+            <h3>本步模型图片 · <span id="modelImageSummary">等待观察</span></h3>
+            <p id="modelImageStatus" class="view-contract-note">按实际图文顺序展示；点击图片可放大。</p>
+            <div id="modelImageGallery" class="image-gallery"></div>
+          </section>
+          <details id="spatialMapPanel" class="visual-section hidden" open><summary>在线 BEV · 模型可见（各已访问楼层同时显示）</summary>
+            <div id="spatialMapFloors" class="actions"></div>
+            <div id="spatialMapImages" class="image-gallery"></div>
+            <p id="spatialMapLegend"></p>
+            <div id="spatialMapNodes" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:8px"></div>
+            <details><summary>地图结构与节点来源</summary><pre id="spatialMapState" class="code compact"></pre></details>
+          </details>
+          <details class="visual-section observer-only" open>
+            <summary>Inspector BEV · 仅观察者 · 全部楼层同时显示</summary>
+            <p class="view-contract-note">以下完整俯视图没有发送给模型。请与上方已揭雾地图区分。</p>
+            <div id="observerBevGallery" class="image-gallery"></div>
+            <div id="bevEmpty" class="empty">该 backend 尚未提供俯视图</div>
+          </details>
+          <details class="visual-section observer-only" open><summary>第三人称 TPV · 仅观察者</summary>
+            <div class="viewport side-view" id="tpvCell"><img id="tpv" alt="仅观察者第三人称" draggable="false"><div class="side-empty" id="tpvEmpty">暂无第三人称图</div></div>
+          </details>
+          <details class="sub"><summary>公开 observation（模型可见的全部结构化输入）</summary>
+            <pre id="observation" class="code compact">{}</pre>
+          </details>
+        </article>
+
+        <article class="panel io-panel">
+          <div class="section-title">
+            <div><span class="eyebrow">03 / Model I/O</span><h2>模型输入 ⇄ 输出（当前步）</h2></div>
+            <span id="ioStepBadge" class="pill muted">步 —</span>
+          </div>
+          <div class="io-grid">
+            <div class="io-col">
+              <div class="io-head agent-visible-bg">📥 模型收到了什么</div>
+              <div id="ioInput" class="io-body"><div class="empty">运行一步后，这里逐节展示发给模型的完整 prompt</div></div>
+            </div>
+            <div class="io-col">
+              <div class="io-head agent-output-bg">📤 模型回答了什么</div>
+              <div id="ioOutput" class="io-body"><div class="empty">模型的原始回复全文与解析出的决策</div></div>
+            </div>
+          </div>
+        </article>
+
+        <article class="panel">
+          <div class="section-title">
+            <div><span class="eyebrow">04 / Public Task</span><h2>公开任务与进度</h2></div>
+            <span id="focusBadge" class="pill muted">focused: —</span>
+          </div>
+          <p id="taskText" class="task-text">—</p>
+          <div id="subtasks" class="subtasks"></div>
+          <div class="milestones-wrap"><span class="eyebrow">子任务变化（评估者）</span>
+            <div id="milestones" class="milestones"><div class="empty">子任务状态变化会记录在这里</div></div>
+          </div>
+        </article>
+
+        <article class="panel">
+          <div class="section-title">
+            <div><span class="eyebrow">05 / Transparent Pipeline</span><h2>逐步数据流检查器</h2></div>
+            <span id="hashState" class="pill muted">Hash chain —</span>
+          </div>
+          <div class="legend">
+            <span class="agent-visible">模型可见</span><span class="agent-output">模型输出</span>
+            <span class="server-private">服务端私有</span><span class="evaluator-private">评测器私有</span>
+            <span class="privileged-assist">特权续测</span>
+          </div>
+          <div id="timeline" class="timeline"><div class="empty">创建运行后，每一步的模型输入、原始输出、解析动作、私有目标解析与世界差异会依次出现。私有面板仅供研究者审计，绝不进入模型上下文。</div></div>
+        </article>
+
+        <article class="panel compare-panel">
+          <div class="section-title">
+            <div><span class="eyebrow">07 / Compare</span><h2>双 Run 对比</h2></div>
+            <button id="compareBtn" class="mini">对比</button>
+          </div>
+          <div class="compare-pickers">
+            <label>Run A<select id="compareA"></select></label>
+            <label>Run B<select id="compareB"></select></label>
+          </div>
+          <div id="compareResult" class="compare-result"><div class="empty">选择两个 run（建议同场景同 seed 不同模型/接口），点「对比」逐步并排查看</div></div>
+        </article>
+      </div>
+
+      <aside class="right-stack">
+        <article class="panel metric-panel">
+          <span class="eyebrow">Run State</span>
+          <div class="metric-grid">
+            <div><b id="runStatus">—</b><small>状态</small></div>
+            <div><b id="runStep">0</b><small>步骤</small></div>
+            <div><b id="srEligible">—</b><small>正式 SR 资格</small></div>
+            <div><b id="assistCount">0</b><small>辅助次数</small></div>
+            <div><b id="tokenTotal">—</b><small>累计 tokens（入/出）</small></div>
+            <div><b id="latencyAvg">—</b><small>平均延迟</small></div>
+          </div>
+          <div id="runMeta" class="meta-line"></div>
+      <details><summary id="compactionStatus">模型记忆压缩：等待运行</summary><pre id="compactionDetail"></pre></details>
+          <div class="apc">
+            <div><span>Focused subtask</span><b id="focus">—</b></div>
+            <div class="progress"><i id="apcBar"></i></div>
+            <small id="apcText">0 / 300 s active wall time</small>
+            <div class="total-clock"><span>整局用时（自启动）</span><b id="episodeClock">0.0 s</b></div>
+            <small id="apcAutoState" class="apc-auto-state"></small>
+          </div>
+        </article>
+
+        <article class="panel">
+          <span class="eyebrow">Per-Step Stats</span><h2>每步指标</h2>
+          <p class="muted">同一步的多行表示模型重试；环境动作失败也计一步，完成情况请看“结果”。</p>
+          <div id="stepStats" class="step-stats"><div class="empty">每步的动作、延迟与 token 用量</div></div>
+        </article>
+
+        <article class="panel" id="interactablesPanel">
+          <span class="eyebrow">Assisted Only</span><h2>当前可操作对象</h2>
+          <div id="interactables" class="interactables"><div class="empty">Assisted 模式下，此处仅显示 runtime 确认「此刻真实可操作」的匿名 handle。</div></div>
+        </article>
+
+        <article class="panel">
+          <span class="eyebrow">Latest Decision</span><h2>本步决策</h2>
+          <div id="decision" class="decision"><div class="empty">暂无模型输出</div></div>
+        </article>
+
+        <article class="panel observer-only">
+          <span class="eyebrow">6D / 18 Capabilities</span><h2>能力审计</h2>
+          <div id="capabilities" class="capabilities"></div>
+        </article>
+
+        <article class="panel">
+          <span class="eyebrow">Structured Memory</span><h2>完整记忆审计</h2><p class="meta-line">实际送给模型的摘要与增量请看 I/O；此处保留未压缩档案。</p>
+          <div id="memory" class="memory"><div class="empty">暂无事实</div></div>
+        </article>
+
+        <article class="panel">
+          <div class="section-title"><div><span class="eyebrow">Run History</span><h2>运行历史</h2></div>
+            <button id="refreshRunsBtn" class="mini">刷新</button></div>
+          <div id="runHistory" class="run-history"><div class="empty">暂无运行</div></div>
+        </article>
+      </aside>
+    </section>
+  </main>
+  <script src="/static/app.js?v=public-task-20260924"></script>
+</body>
+</html>

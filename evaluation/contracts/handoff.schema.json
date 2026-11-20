@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://egophys.local/contracts/handoff.schema.json",
+  "title": "Privileged Handoff",
+  "type": "object",
+  "required": ["assist_id", "subtask_id", "assist_types", "information_grants", "world_state_diff", "postconditions_verified", "handoff_context", "next_subtask", "taint_lineage"],
+  "properties": {
+    "assist_id": {"type": "string"},
+    "subtask_id": {"type": "string"},
+    "assist_types": {"type": "array", "items": {"enum": ["dependency_release", "world_transition", "information_grant", "branch_resolution"]}},
+    "capabilities": {"type": "array", "items": {"type": "string"}},
+    "information_grants": {"type": "array", "items": {"type": "object"}},
+    "world_state_diff": {"type": "object"},
+    "postconditions_verified": {"type": "boolean"},
+    "handoff_context": {"type": "string"},
+    "next_subtask": {"type": ["string", "null"]},
+    "taint_lineage": {"type": "array", "items": {"type": "string"}}
+  },
+  "additionalProperties": true
+}
+

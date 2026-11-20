@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://egophys.local/contracts/audit-event.schema.json",
+  "title": "Audit Event",
+  "type": "object",
+  "required": ["run_id", "seq", "timestamp", "stage", "visibility", "payload", "prev_hash", "event_hash"],
+  "properties": {
+    "run_id": {"type": "string"},
+    "seq": {"type": "integer", "minimum": 1},
+    "timestamp": {"type": "string", "format": "date-time"},
+    "step": {"type": ["integer", "null"]},
+    "stage": {"type": "string"},
+    "visibility": {"enum": ["agent_visible", "agent_output", "server_private", "evaluator_private", "privileged_assist"]},
+    "payload": {"type": "object"},
+    "prev_hash": {"type": "string"},
+    "event_hash": {"type": "string"}
+  },
+  "additionalProperties": false
+}
+

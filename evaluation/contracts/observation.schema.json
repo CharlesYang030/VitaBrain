@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://egophys.local/contracts/observation.schema.json",
+  "title": "Public Observation",
+  "type": "object",
+  "required": ["observation_id", "step", "rgb", "task", "public_feedback"],
+  "properties": {
+    "observation_id": {"type": "string"},
+    "step": {"type": "integer", "minimum": 0},
+    "rgb": {"type": "object"},
+    "task": {"type": "string"},
+    "public_feedback": {"type": "string"},
+    "focused_subtask": {"type": ["string", "null"]},
+    "episode_done": {"type": "boolean"},
+    "interactables": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["handle", "bbox", "allowed_actions"],
+        "properties": {
+          "handle": {"type": "string"},
+          "label": {"type": "string"},
+          "bbox": {"type": "array", "minItems": 4, "maxItems": 4},
+          "allowed_actions": {"type": "array", "items": {"type": "string"}}
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": true
+}
+

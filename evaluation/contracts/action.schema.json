@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://egophys.local/contracts/action.schema.json",
+  "title": "Agent Action",
+  "type": "object",
+  "required": ["verb"],
+  "properties": {
+    "verb": {"type": "string"},
+    "target": {
+      "oneOf": [
+        {"type": "null"},
+        {
+          "type": "object",
+          "required": ["kind", "observation_id"],
+          "properties": {
+            "kind": {"enum": ["pixel", "handle"]},
+            "observation_id": {"type": "string"},
+            "x": {"type": "number", "minimum": 0, "maximum": 1},
+            "y": {"type": "number", "minimum": 0, "maximum": 1},
+            "handle": {"type": "string"}
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "distance_m": {"type": "number", "minimum": 0.05, "maximum": 1.0},
+        "degrees": {"type": "number", "minimum": 1, "maximum": 90}
+      }
+    }
+  },
+  "additionalProperties": false
+}
