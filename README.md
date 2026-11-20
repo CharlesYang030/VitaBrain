@@ -1,5 +1,32 @@
 # VitaBrain — Evaluation Framework
 
+## 论文信息
+
+**VitaBrain: Benchmarking Long-Horizon Spatiotemporal Planning and Reasoning in Interactive Worlds**
+
+**作者（按论文署名顺序）：**
+
+Qihao Yang<sup>2</sup>, Pengfei Chen<sup>3</sup>, Lingxi Xie<sup>3</sup>,
+Zhixu Zheng<sup>4</sup>, Qiyue Zhao<sup>2</sup>, Jiannan Ge<sup>3</sup>,
+Xinyue Huo<sup>3</sup>, Kaiwen Duan<sup>3</sup>, Sida He<sup>3</sup>,
+Yifan Yang<sup>2</sup>, Zhihang Zhong<sup>2,*</sup>, Xue Yang<sup>2,*</sup>,
+Qi Tian<sup>1,3,*</sup>.
+
+**单位：**
+
+1. Guangdong Laboratory of Artificial Intelligence and Digital Economy (SZ), China
+2. Shanghai Jiao Tong University
+3. Huawei Technologies Ltd
+4. University of Electronic Science and Technology of China
+
+<sup>*</sup> Corresponding authors / 通讯作者：Zhihang Zhong、Xue Yang、Qi Tian。
+
+**研究概述：** 本文面向交互世界中的长程时空规划与推理，研究模型如何结合
+空间理解、持续记忆、线索利用和多步决策完成相互依赖的任务。本仓库提供
+相关评测框架源码，具体发布范围和运行方式见下文。
+
+## 代码概览
+
 VitaBrain 长程时空智能体评测框架源码（8852 评测应用）。
 
 本仓库提供评测与调试代码，包括模型接口、环境交互契约、结构化记忆、
