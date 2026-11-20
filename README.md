@@ -9,8 +9,8 @@
 Qihao Yang<sup>2</sup>, Pengfei Chen<sup>3</sup>, Lingxi Xie<sup>3</sup>,
 Zhixu Zheng<sup>4</sup>, Qiyue Zhao<sup>2</sup>, Jiannan Ge<sup>3</sup>,
 Xinyue Huo<sup>3</sup>, Kaiwen Duan<sup>3</sup>, Sida He<sup>3</sup>,
-Yifan Yang<sup>2</sup>, Zhihang Zhong<sup>2,*</sup>, Xue Yang<sup>2,*</sup>,
-Qi Tian<sup>1,3,*</sup>.
+Yifan Yang<sup>2</sup>, Zhihang Zhong<sup>2,&#42;</sup>, Xue Yang<sup>2,&#42;</sup>,
+Qi Tian<sup>1,3,&#42;</sup>.
 
 **单位：**
 
